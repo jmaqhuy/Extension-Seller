@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const resData = await response.json();
             if (response.ok) {
-                showStatus(`✅ ${'Lưu thành công sản phẩm với id ' + resData.id || 'Đã gửi dữ liệu thành công!'}`, 'success', 4000);
+                showStatus(`✅ ${resData.message || 'Đã gửi dữ liệu thành công!'}`, 'success', 4000);
             } else {
                 showStatus(`❌ ${resData.message || 'Có lỗi xảy ra!'}` , 'error');
                 return;
