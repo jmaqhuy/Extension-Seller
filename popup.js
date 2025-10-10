@@ -72,35 +72,78 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     function extractProductData() {
-        return new Promise((resolve) => {
-            showStatus('<span class="loading"></span>Đang trích xuất dữ liệu sản phẩm...', 'info');
+    return new Promise((resolve) => {
+        showStatus('<span class="loading"></span>Đang trích xuất dữ liệu sản phẩm...', 'info');
 
-            chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
-                let currentUrl = tabs[0].url.split("?")[0];
-                if (!currentUrl?.startsWith("https://www.etsy.com/listing/")) {
-                    showStatus('❌ Bạn cần phải vào trang sản phẩm của Etsy', 'error');
-                    resolve(null);
-                    return;
-                }
+        chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
+            // Kiểm tra có tab không
+            if (!tabs || tabs.length === 0) {
+                showStatus('❌ Không tìm thấy tab đang hoạt động', 'error');
+                resolve(null);
+                return;
+            }
 
-                chrome.tabs.sendMessage(tabs[0].id, { action: "extractProductData" }, function (response) {
+            const currentUrl = tabs[0].url;
+            
+            // Kiểm tra URL hợp lệ
+            if (!currentUrl) {
+                showStatus('❌ Không thể truy cập URL của trang', 'error');
+                resolve(null);
+                return;
+            }
+
+            const cleanUrl = currentUrl.split("?")[0];
+            if (!cleanUrl.startsWith("https://www.etsy.com/listing/")) {
+                showStatus('❌ Vui lòng mở trang sản phẩm Etsy (https://www.etsy.com/listing/...)', 'error');
+                resolve(null);
+                return;
+            }
+
+            // Gửi message đến content script
+            chrome.tabs.sendMessage(
+                tabs[0].id, 
+                { action: "extractProductData" }, 
+                function (response) {
+                    // Xử lý lỗi runtime
                     if (chrome.runtime.lastError) {
-                        showStatus('❌ Vui lòng đợi web tải xong hoặc thử tải lại trang', 'error');
+                        const errorMsg = chrome.runtime.lastError.message;
+                        
+                        if (errorMsg.includes('Receiving end does not exist')) {
+                            showStatus('❌ Vui lòng tải lại trang Etsy và thử lại', 'error');
+                        } else if (errorMsg.includes('Cannot access')) {
+                            showStatus('❌ Không thể truy cập trang này', 'error');
+                        } else {
+                            showStatus(`❌ Lỗi: ${errorMsg}`, 'error');
+                        }
+                        
+                        console.error('Chrome runtime error:', errorMsg);
                         resolve(null);
                         return;
                     }
 
-                    if (response && response.success && response.data) {
-                        showStatus('✅ Đã trích xuất thành công dữ liệu sản phẩm!', 'success');
+                    // Kiểm tra response
+                    if (!response) {
+                        showStatus('❌ Không nhận được phản hồi từ trang. Vui lòng tải lại trang.', 'error');
+                        resolve(null);
+                        return;
+                    }
+
+                    // Xử lý response thành công
+                    if (response.success && response.data) {
+                        showStatus('✅ Trích xuất dữ liệu thành công!', 'success');
                         resolve(response.data);
                     } else {
-                        showStatus('❌ Không tìm thấy dữ liệu sản phẩm JSON-LD', 'error');
+                        // Xử lý lỗi từ content script
+                        const errorMsg = response.error || 'Không tìm thấy dữ liệu sản phẩm';
+                        showStatus(`❌ ${errorMsg}`, 'error');
+                        console.error('Extraction error:', response);
                         resolve(null);
                     }
-                });
-            });
+                }
+            );
         });
-    }
+    });
+}
 
     async function pushDataToServer(){
         console.log('pushDataToGoogleSheets called');
