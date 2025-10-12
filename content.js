@@ -85,11 +85,11 @@ function extractProductData() {
     const shopOwnerDiv = document.querySelector('div[data-appears-component-name="shop_owners"]');
     let shopImage = null;
     let shopName = null;
-    let shopUrl = null;
+    let avatarUrl = null;
 
     if (shopOwnerDiv) {
         const shopImageElement = shopOwnerDiv.querySelector('.wt-thumbnail-larger img');
-        shopImage = shopImageElement?.src || null;
+        avatarUrl = shopImageElement?.src || null;
         
         const shopLinkElement = shopOwnerDiv.querySelector('a[href*="/shop/"]');
         shopUrl = shopLinkElement?.href.split("?").at(0) || null;
@@ -118,7 +118,7 @@ function extractProductData() {
 
     if (!tags || tags.length === 0) {
         console.warn(`Không tìm thấy tags cho sản phẩm: ${productData.sku}`);
-        return; // hoặc throw new Error(...) nếu bạn muốn dừng cả hàm
+        // hoặc throw new Error(...) nếu bạn muốn dừng cả hàm
     }
 
     // 6. Trả về dữ liệu đã trích xuất
@@ -136,7 +136,7 @@ function extractProductData() {
         shop: {
             name: shopName,
             url: shopUrl,
-            image: shopImage
+            avatarUrl: avatarUrl
         }
     };
 }

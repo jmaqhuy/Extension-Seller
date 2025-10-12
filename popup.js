@@ -6,28 +6,89 @@ document.addEventListener('DOMContentLoaded', function () {
 
     const N8N_URL = 'http://localhost:8081/etsy/products';
 
-    
-    const savedProductType = localStorage.getItem('etsyExtensionProductType');
-    const savedAccountId = localStorage.getItem('etsyExtensionAccountId');
-    if (savedProductType && productTypeSelect) {
-        productTypeSelect.value = savedProductType;
-    }
-    
-    if (productTypeSelect) {
-        productTypeSelect.addEventListener('change', function() {
-            localStorage.setItem('etsyExtensionProductType', productTypeSelect.value);
-        });
-    }
+    saveProductBtn.disabled = true;
 
-    if (savedAccountId && accountIdSelect) {
-        accountIdSelect.value = savedAccountId;
+    async function loadData() {
+        try {
+            // Gọi API
+            const response = await fetch('http://localhost:8081/extension/data'); // ⚠️ sửa URL cho đúng backend của bạn
+            const result = await response.json();
+
+            // Lấy ra data từ response
+            const accounts = result.data.account;
+            const productTypes = result.data.productType;
+
+            // DOM tới select
+            const accountSelect = document.getElementById('accountId');
+            const productTypeSelect = document.getElementById('productType');
+
+            // // Xóa option cũ
+            // accountSelect.innerHTML = '<option value="">-- Chọn account --</option>';
+            // productTypeSelect.innerHTML = '<option value="">-- Chọn loại sản phẩm --</option>';
+
+            // Thêm danh sách account
+            accounts.forEach(acc => {
+                const option = document.createElement('option');
+                option.value = acc.id;
+                option.textContent = acc.name;
+                accountSelect.appendChild(option);
+            });
+
+            // Thêm danh sách loại sản phẩm
+            productTypes.forEach(pt => {
+                const option = document.createElement('option');
+                option.value = pt.name;
+                option.textContent = pt.name;
+                productTypeSelect.appendChild(option);
+            });
+
+            const savedProductType = localStorage.getItem('etsyExtensionProductType');
+            const savedAccountId = localStorage.getItem('etsyExtensionAccountId');
+            if (savedProductType && productTypeSelect) {
+                if (Array.from(productTypeSelect.options).some(opt => opt.value === savedProductType)) {
+                    productTypeSelect.value = savedProductType;
+                }
+            }
+            
+            if (productTypeSelect) {
+                productTypeSelect.addEventListener('change', function() {
+                    localStorage.setItem('etsyExtensionProductType', productTypeSelect.value);
+                    if (productTypeSelect.value === '-1' || accountIdSelect.value === '-1') {
+                        saveProductBtn.disabled = true;
+                    } else {
+                        saveProductBtn.disabled = false;
+                    }
+                });
+            }
+
+            if (savedAccountId && accountIdSelect) {
+                if (Array.from(accountSelect.options).some(opt => opt.value === savedAccountId)) {
+                    accountSelect.value = savedAccountId;
+                }
+            }
+            // Save account ID on change
+            if (accountIdSelect) {
+                accountIdSelect.addEventListener('change', function() {
+                    localStorage.setItem('etsyExtensionAccountId', accountIdSelect.value);
+                    if (productTypeSelect.value === '-1' || accountIdSelect.value === '-1') {
+                        saveProductBtn.disabled = true;
+                    } else {
+                        saveProductBtn.disabled = false;
+                    }
+                });
+            }     
+            if (productTypeSelect.value === '-1' || accountIdSelect.value === '-1') {
+                saveProductBtn.disabled = true;
+            } else {
+                saveProductBtn.disabled = false;
+            }     
+
+        } catch (error) {
+            console.error('Lỗi khi tải dữ liệu:', error);
+        }
     }
-    // Save account ID on change
-    if (accountIdSelect) {
-        accountIdSelect.addEventListener('change', function() {
-            localStorage.setItem('etsyExtensionAccountId', accountIdSelect.value);
-        });
-    }
+    loadData();
+    
 
     /**
      * Show and hide status messages
